@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
 	public Collider2D leftSide;
 	public Collider2D rightSide;
 
+	[HideInInspector] public int range, ammo, damage;
 	public int enemiesKilled = 0;
 
 	bool doubleJump = true;
@@ -32,32 +33,52 @@ public class PlayerController : MonoBehaviour
 	const int RIGHT = 1;
 	const int sideBuffer = 1;
 
+	const int DEFAULT_RANGE = 2;
+	const int DEFAULT_DAMAGE = 5;
+
+	public LayerMask enemyLayer;
+
 	#endregion
+
+	void getWeapon()
+	{
+		
+	}
+
 
 	void useWeapon(int _side, int _range)
 	{
 		int lor;
 		int buffer = sideBuffer;
-		_range = 2;
 		if (_side == RIGHT) 
 		{
-			Debug.Log("Shot Right");
+			//Debug.Log("Shot Right");
 			lor = _range;
 		} 
 		else
 		{
-			Debug.Log("Shot Left");
+			//Debug.Log("Shot Left");
 			buffer *= -1;
 			lor = -1*_range;
 		}
-		Vector3 origin = new Vector3(transform.position.x+buffer, transform.position.y, transform.position.z);
-		Vector3 dir = new Vector3(transform.position.x+lor, transform.position.y, transform.position.z);
+		Vector3 origin = new Vector3(transform.position.x+buffer, transform.position.y, 0);
+		Vector3 dir = new Vector3(transform.position.x+lor, transform.position.y, 0);
 		Debug.DrawLine (origin, dir, Color.white, 3f, false);
-		RaycastHit2D hit = Physics2D.Raycast (origin, dir, 20);
-		if(hit.collider != null && hit.collider.tag == "Enemy")
+		RaycastHit2D[] hit = Physics2D.RaycastAll (origin, dir, Mathf.Abs(_range));
+		foreach(RaycastHit2D _hit in hit)
 		{
-			enemiesKilled++;
-			hit.collider.gameObject.SetActive(false);
+			if(_hit.collider != null && _hit.collider.tag == "Enemy")
+			{
+				Debug.Log(_hit.distance);
+				Debug.Log(origin);
+				Debug.Log(transform.position);
+				Debug.Log(_hit.collider.gameObject.name);
+				if(_hit.collider.tag == "Enemy")
+				{
+					enemiesKilled++;
+					_hit.collider.gameObject.GetComponent<Enemy>().health -= damage;
+				}
+			}
 		}
 	}
 
@@ -68,6 +89,7 @@ public class PlayerController : MonoBehaviour
 	{
 		rb2d = GetComponent<Rigidbody2D>();
 		platforms = GameObject.FindGameObjectsWithTag ("Floor");
+		range = DEFAULT_RANGE;
 	}
 
 	// Update is called once per frame
@@ -95,14 +117,6 @@ public class PlayerController : MonoBehaviour
 			}
 			jump = true;
 		}
-		if (Input.GetKeyDown (KeyCode.Z)) 
-		{
-			useWeapon(LEFT, 10);
-		}
-		if (Input.GetKeyDown (KeyCode.X)) 
-		{
-			useWeapon(RIGHT, 10);
-		}
 
 
 
@@ -128,8 +142,28 @@ public class PlayerController : MonoBehaviour
 			rb2d.AddForce(new Vector2(0f, jumpForce));
 			jump = false;
 		}
+		if (Input.GetKeyDown (KeyCode.Z)) 
+		{
+			useWeapon(LEFT, range);
+		}
+		if (Input.GetKeyDown (KeyCode.X)) 
+		{
+			useWeapon(RIGHT, range);
+		}
 	}
 
+	void OnCollisionEnter2D(Collision2D col)
+	{
+		if(col.gameObject.tag == "Weapon")
+		{
+			Debug.Log(range);
+			range = col.gameObject.GetComponent<Weapon>().range;
+			Debug.Log(range);
+			ammo = col.gameObject.GetComponent<Weapon>().ammo;
+			damage = col.gameObject.GetComponent<Weapon>().damage;
+			col.gameObject.SetActive(false);
+		}
+	}
 
 	void Flip()
 	{

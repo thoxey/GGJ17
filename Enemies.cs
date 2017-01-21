@@ -17,6 +17,8 @@ public class Enemies : MonoBehaviour {
 	int oldTimer = 0;
 	bool oneAtATime;
 	int speed = 3;
+	int maxHealth = 10;
+
 	void generateEnemy(GameObject _enemy, int _side)
 	{
 		GameObject retenemy = (GameObject)Instantiate(_enemy);
@@ -30,7 +32,7 @@ public class Enemies : MonoBehaviour {
 	}
 	void generatePool()
 	{
-		Debug.Log ("Generating Pool");
+		//Debug.Log ("Generating Pool");
 		for (int i = 0; i < maxEnemies; i++)
 		{
 			generateEnemy (enemyPrefab, i);
@@ -50,17 +52,18 @@ public class Enemies : MonoBehaviour {
 		if (oldTimer != (int)Time.realtimeSinceStartup) 
 		{
 			oldTimer = (int)Time.realtimeSinceStartup;
-			Debug.Log (player.GetComponent<PlayerController> ().enemiesKilled);
+			//Debug.Log (player.GetComponent<PlayerController> ().enemiesKilled);
 			oneAtATime = true;
 			timer++;
 		}
 		//New Wave
 		if (player.GetComponent<PlayerController> ().enemiesKilled == wavesize) 
 		{
-			Debug.Log ("End of Wave");
+			//Debug.Log ("End of Wave");
 			timer = 1;
 			wavesize ++;
 			speed++;
+			maxHealth++;
 			enemiesInWave = 0;
 			player.GetComponent<PlayerController> ().enemiesKilled = 0;
 		}
@@ -69,6 +72,11 @@ public class Enemies : MonoBehaviour {
 		{
 			if (oneAtATime) 
 			{
+				if(enemiesInWave%2 != 0)
+					enemyPool [enemiesInWave].transform.position = new Vector3(Random.Range(-7.0f, 0.0f), 7, 0);
+				else
+					enemyPool [enemiesInWave].transform.position = new Vector3(Random.Range(0.0f, 7.0f), 7, 0);
+				enemyPool [enemiesInWave].GetComponent<Enemy>().health = maxHealth;
 				enemyPool [enemiesInWave].SetActive (true);
 				enemiesInWave++;
 				oneAtATime = false;
@@ -86,6 +94,12 @@ public class Enemies : MonoBehaviour {
 				Vector3 target = new Vector3 (player.transform.position.x - 2, player.transform.position.y, player.transform.position.z);
 				enemy.transform.position = Vector3.MoveTowards (enemy.transform.position, target, step);
 			}
+			enemy.GetComponent<Enemy>().updateHealthBar(maxHealth);
+			if(enemy.GetComponent<Enemy>().health <=0)
+			{
+				enemy.SetActive(false);
+			}
 		}
+
 	}
 }
