@@ -15,6 +15,10 @@ public class PlayerController : MonoBehaviour
 	public Collider2D leftSide;
 	public Collider2D rightSide;
 
+	public Transform sword;
+
+	public GameObject coolDownIndicator;
+
 	[HideInInspector] public int range, ammo, damage;
 	public int enemiesKilled = 0;
 
@@ -23,8 +27,13 @@ public class PlayerController : MonoBehaviour
 	float downV;
 	float olddownV;
 
+	int oldTimer = 0;
+	int timer = 0;
+
+	bool coolDown = true;
 	bool grounded = false;
 	bool sided = false;
+	bool onHit = false;
 	private Rigidbody2D rb2d;
 
 	GameObject[] platforms;
@@ -34,9 +43,8 @@ public class PlayerController : MonoBehaviour
 	const int sideBuffer = 1;
 
 	const int DEFAULT_RANGE = 2;
-	const int DEFAULT_DAMAGE = 5;
+	const int DEFAULT_DAMAGE = 1;
 
-	public LayerMask enemyLayer;
 
 	#endregion
 
@@ -45,6 +53,16 @@ public class PlayerController : MonoBehaviour
 		
 	}
 
+	void rotateSword()
+	{
+		Vector3 rotation = new Vector3(0, 0, -30);
+		sword.Rotate(rotation*Time.deltaTime*30);
+		if(sword.localRotation.z > 0f && sword.localRotation.z < 2)
+		{
+			onHit = false;
+			sword.localEulerAngles = new Vector3(0,0,0);
+		}
+	}
 
 	void useWeapon(int _side, int _range)
 	{
@@ -67,16 +85,24 @@ public class PlayerController : MonoBehaviour
 		RaycastHit2D[] hit = Physics2D.RaycastAll (origin, dir, Mathf.Abs(_range));
 		foreach(RaycastHit2D _hit in hit)
 		{
+//			Debug.Log(_hit.distance);
+//			Debug.Log(origin);
+//			Debug.Log(transform.position);
+//			Debug.Log(_hit.collider.gameObject.name);
 			if(_hit.collider != null && _hit.collider.tag == "Enemy")
 			{
-				Debug.Log(_hit.distance);
-				Debug.Log(origin);
-				Debug.Log(transform.position);
-				Debug.Log(_hit.collider.gameObject.name);
 				if(_hit.collider.tag == "Enemy")
 				{
+					onHit = true;
 					enemiesKilled++;
-					_hit.collider.gameObject.GetComponent<Enemy>().health -= damage;
+					if(coolDown)
+					{
+						_hit.collider.gameObject.transform.localScale = 
+						new Vector3(_hit.collider.gameObject.transform.localScale.x, 
+									_hit.collider.gameObject.transform.localScale.y,
+									transform.localScale.z-damage);
+						coolDown = false;
+					}
 				}
 			}
 		}
@@ -90,11 +116,35 @@ public class PlayerController : MonoBehaviour
 		rb2d = GetComponent<Rigidbody2D>();
 		platforms = GameObject.FindGameObjectsWithTag ("Floor");
 		range = DEFAULT_RANGE;
+		damage = DEFAULT_DAMAGE;
 	}
 
 	// Update is called once per frame
 	void Update () 
 	{
+		if (oldTimer != (int)Time.realtimeSinceStartup) 
+		{
+			oldTimer = (int)Time.realtimeSinceStartup;
+			//Debug.Log (player.GetComponent<PlayerController> ().enemiesKilled);
+			timer++;
+		}
+		if(timer%2 == 0)
+		{
+			coolDown = true;
+		}
+		if(coolDown)
+		{
+			coolDownIndicator.SetActive(true);
+		}
+		else
+		{
+			coolDownIndicator.SetActive(false);
+		}
+		if(onHit)
+		{
+			rotateSword();
+		}
+		
 		grounded = false;
 		sided = true;
 		foreach(GameObject platform in platforms)

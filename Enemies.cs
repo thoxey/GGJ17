@@ -23,6 +23,7 @@ public class Enemies : MonoBehaviour {
 	{
 		GameObject retenemy = (GameObject)Instantiate(_enemy);
 		retenemy.transform.parent = enemyStorer.transform;
+		retenemy.transform.localScale = new Vector3(enemyPrefab.transform.localScale.x, enemyPrefab.transform.localScale.y,maxHealth);
 		if(_side%2 != 0)
 			retenemy.transform.position = new Vector3(Random.Range(-7.0f, 0.0f), 7, 0);
 		else
@@ -76,29 +77,45 @@ public class Enemies : MonoBehaviour {
 					enemyPool [enemiesInWave].transform.position = new Vector3(Random.Range(-7.0f, 0.0f), 7, 0);
 				else
 					enemyPool [enemiesInWave].transform.position = new Vector3(Random.Range(0.0f, 7.0f), 7, 0);
-				enemyPool [enemiesInWave].GetComponent<Enemy>().health = maxHealth;
+				enemyPool[enemiesInWave].transform.localScale = new Vector3(enemyPrefab.transform.localScale.x, enemyPrefab.transform.localScale.y,maxHealth);
 				enemyPool [enemiesInWave].SetActive (true);
 				enemiesInWave++;
 				oneAtATime = false;
 			}
 		}
-
+		int i = 0;
 		foreach (GameObject enemy in enemyPool) 
 		{
-			if (enemy.transform.position.x > player.transform.position.x) {
-				Vector3 target = new Vector3 (player.transform.position.x + 2, player.transform.position.y, player.transform.position.z);
-				enemy.transform.position = Vector3.MoveTowards (enemy.transform.position, target, step);
+			if (enemy.transform.position.x > player.transform.position.x) 
+			{
+				if(player.transform.position.y+0.2f < enemy.transform.position.y && player.transform.position.y < 2.2)
+				{
+					enemy.transform.position = Vector3.MoveTowards(enemy.transform.position, new Vector3(enemy.transform.position.x+10,enemy.transform.position.y,enemy.transform.position.z), step);
+				}
+				else if(player.transform.position.y < 2.2)
+				{
+					Vector3 target = new Vector3 (player.transform.position.x + 1.5f, player.transform.position.y, player.transform.position.z);
+					enemy.transform.position = Vector3.MoveTowards (enemy.transform.position, target, step);
+				}
 			} 
 			else 
 			{
-				Vector3 target = new Vector3 (player.transform.position.x - 2, player.transform.position.y, player.transform.position.z);
-				enemy.transform.position = Vector3.MoveTowards (enemy.transform.position, target, step);
+				if(player.transform.position.y+0.2f < enemy.transform.position.y && player.transform.position.y < 2.2)
+				{
+					enemy.transform.position = Vector3.MoveTowards(enemy.transform.position, new Vector3(enemy.transform.position.x-10,enemy.transform.position.y,enemy.transform.position.z), step);
+				}
+				else if(player.transform.position.y < 2.2)
+				{
+					Vector3 target = new Vector3 (player.transform.position.x - 1.5f, player.transform.position.y, player.transform.position.z);
+					enemy.transform.position = Vector3.MoveTowards (enemy.transform.position, target, step);
+				}
 			}
-			enemy.GetComponent<Enemy>().updateHealthBar(maxHealth);
-			if(enemy.GetComponent<Enemy>().health <=0)
+			enemy.transform.position = new Vector3(enemy.transform.position.x,enemy.transform.position.y+0.05f,enemy.transform.position.z);
+			if(enemy.transform.localScale.z <=0)
 			{
 				enemy.SetActive(false);
 			}
+			i++;
 		}
 
 	}
