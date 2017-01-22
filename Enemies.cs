@@ -11,13 +11,14 @@ public class Enemies : MonoBehaviour {
 
 	int maxEnemies = 30; //Max Enemies in the pool
 	int enemiesInWave = 0; //Enemies Spawned In a wave
-	int wavesize = 3; //Max Enemies to spawn before waiting
+	int wavesize = 4; //Max Enemies to spawn before waiting
 	int spawnrate = 3; //Seconds before new spawn
 	int timer = 0;
 	int oldTimer = 0;
 	bool oneAtATime;
 	int speed = 3;
 	int maxHealth = 10;
+	int damage = 2;
 
 	void generateEnemy(GameObject _enemy, int _side)
 	{
@@ -29,6 +30,7 @@ public class Enemies : MonoBehaviour {
 		else
 			retenemy.transform.position = new Vector3(Random.Range(0.0f, 7.0f), 7, 0);
 		retenemy.SetActive (false);
+		retenemy.GetComponent<EnemyStats>().health = maxHealth;
 		enemyPool.Add(retenemy);
 	}
 	void generatePool()
@@ -57,6 +59,7 @@ public class Enemies : MonoBehaviour {
 			oneAtATime = true;
 			timer++;
 		}
+		#region Wave Management
 		//New Wave
 		if (player.GetComponent<PlayerController> ().enemiesKilled == wavesize) 
 		{
@@ -64,12 +67,11 @@ public class Enemies : MonoBehaviour {
 			timer = 1;
 			wavesize ++;
 			speed++;
-			maxHealth++;
 			enemiesInWave = 0;
 			player.GetComponent<PlayerController> ().enemiesKilled = 0;
 		}
 		//Spawn Enemy
-		if(timer % spawnrate == 0 && enemiesInWave < wavesize)
+		if(timer % spawnrate == 0)
 		{
 			if (oneAtATime) 
 			{
@@ -78,12 +80,15 @@ public class Enemies : MonoBehaviour {
 				else
 					enemyPool [enemiesInWave].transform.position = new Vector3(Random.Range(0.0f, 7.0f), 7, 0);
 				enemyPool[enemiesInWave].transform.localScale = new Vector3(enemyPrefab.transform.localScale.x, enemyPrefab.transform.localScale.y,maxHealth);
+				enemyPool[enemiesInWave].GetComponent<EnemyStats>().health = maxHealth;
+				enemyPool[enemiesInWave].GetComponent<EnemyStats>().onReactivation();
 				enemyPool [enemiesInWave].SetActive (true);
 				enemiesInWave++;
 				oneAtATime = false;
 			}
 		}
-		int i = 0;
+		#endregion
+		#region ForEach Enemy In the Scene
 		foreach (GameObject enemy in enemyPool) 
 		{
 			if (enemy.transform.position.x > player.transform.position.x) 
@@ -110,13 +115,16 @@ public class Enemies : MonoBehaviour {
 					enemy.transform.position = Vector3.MoveTowards (enemy.transform.position, target, step);
 				}
 			}
+			if(Vector3.Distance(player.transform.position, enemy.transform.position) < 1.55)
+				player.GetComponent<PlayerController>().health -= damage;
 			enemy.transform.position = new Vector3(enemy.transform.position.x,enemy.transform.position.y+0.05f,enemy.transform.position.z);
-			if(enemy.transform.localScale.z <=0)
+			if(enemy.GetComponent<EnemyStats>().health <= 0)
 			{
-				enemy.SetActive(false);
+				enemy.SetActive(false);	
+				enemy.transform.position = new Vector3(0, 10, 0);
 			}
-			i++;
 		}
+		#endregion
 
 	}
 }

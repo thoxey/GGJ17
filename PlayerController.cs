@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 //Based off of boiler plate from Unity
 public class PlayerController : MonoBehaviour 
 {
@@ -17,7 +18,10 @@ public class PlayerController : MonoBehaviour
 
 	public Transform sword;
 
-	public GameObject coolDownIndicator;
+	public int health;
+
+	public GameObject hands;
+	public Sprite defualtHands;
 
 	[HideInInspector] public int range, ammo, damage;
 	public int enemiesKilled = 0;
@@ -43,21 +47,18 @@ public class PlayerController : MonoBehaviour
 	const int sideBuffer = 1;
 
 	const int DEFAULT_RANGE = 2;
-	const int DEFAULT_DAMAGE = 1;
+	const int DEFAULT_DAMAGE = 3;
 
 
 	#endregion
 
-	void getWeapon()
-	{
 		
-	}
 
 	void rotateSword()
 	{
-		Vector3 rotation = new Vector3(0, 0, -30);
+		Vector3 rotation = new Vector3(0, 0, 30);
 		sword.Rotate(rotation*Time.deltaTime*30);
-		if(sword.localRotation.z > 0f && sword.localRotation.z < 2)
+		if(sword.localRotation.z < 0f && sword.localRotation.z > -2)
 		{
 			onHit = false;
 			sword.localEulerAngles = new Vector3(0,0,0);
@@ -101,7 +102,12 @@ public class PlayerController : MonoBehaviour
 						new Vector3(_hit.collider.gameObject.transform.localScale.x, 
 									_hit.collider.gameObject.transform.localScale.y,
 									transform.localScale.z-damage);
+						_hit.collider.gameObject.GetComponent<EnemyStats>().health -= damage;
 						coolDown = false;
+						if(ammo != 0)
+						{
+							ammo--;
+						}
 					}
 				}
 			}
@@ -132,14 +138,6 @@ public class PlayerController : MonoBehaviour
 		{
 			coolDown = true;
 		}
-		if(coolDown)
-		{
-			coolDownIndicator.SetActive(true);
-		}
-		else
-		{
-			coolDownIndicator.SetActive(false);
-		}
 		if(onHit)
 		{
 			rotateSword();
@@ -167,7 +165,12 @@ public class PlayerController : MonoBehaviour
 			}
 			jump = true;
 		}
-
+		if(grounded)
+			doubleJump = true;
+		if(Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.LeftArrow))
+		{
+			transform.position = new Vector3(transform.position.x,transform.position.y+0.05f,transform.position.z);
+		}
 
 
 	}
@@ -177,8 +180,9 @@ public class PlayerController : MonoBehaviour
 		float h = Input.GetAxis("Horizontal");
 
 		if ((h * rb2d.velocity.x < maxSpeed) && sided)
+		{
 			rb2d.AddForce(Vector2.right * h * moveForce);
-
+		}
 		if (Mathf.Abs (rb2d.velocity.x) > maxSpeed)
 			rb2d.velocity = new Vector2(Mathf.Sign (rb2d.velocity.x) * maxSpeed, rb2d.velocity.y);
 
@@ -200,18 +204,33 @@ public class PlayerController : MonoBehaviour
 		{
 			useWeapon(RIGHT, range);
 		}
+		if(ammo == 0)
+		{
+			hands.GetComponent<SpriteRenderer>().sprite = defualtHands;
+			range = DEFAULT_RANGE;
+			damage = DEFAULT_DAMAGE;
+		}
+		if(health <= 0)
+		{
+			SceneManager.LoadScene("Game Over");
+		}
 	}
 
 	void OnCollisionEnter2D(Collision2D col)
 	{
 		if(col.gameObject.tag == "Weapon")
 		{
-			Debug.Log(range);
 			range = col.gameObject.GetComponent<Weapon>().range;
-			Debug.Log(range);
 			ammo = col.gameObject.GetComponent<Weapon>().ammo;
 			damage = col.gameObject.GetComponent<Weapon>().damage;
+			col.gameObject.GetComponent<Weapon>().spawned = false;
+			hands.GetComponent<SpriteRenderer>().sprite = col.gameObject.GetComponent<Weapon>().hands;
 			col.gameObject.SetActive(false);
+		}
+		if(col.gameObject.tag == "Heart")
+		{
+			health += 400;
+			col.gameObject.transform.position = new Vector3(Random.Range(-7.0f, 7.0f), 100, 0);
 		}
 	}
 
